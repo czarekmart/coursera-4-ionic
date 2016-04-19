@@ -3,6 +3,10 @@
 
 # Directory-based project format:
 .idea
+conFusion/hooks
+conFusion/plugins
+conFusion/scss
+conFusion/www/lib
 
 
 
