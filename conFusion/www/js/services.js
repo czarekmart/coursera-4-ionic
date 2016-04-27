@@ -39,4 +39,37 @@ angular.module('conFusion.services', ['ngResource'])
     return feedfac;
   }])
 
+  //***********************************************************************************
+  // favoriteFactory
+  //***********************************************************************************
+  .factory('favoriteFactory', ['$resource', 'baseURL', function ($resource, baseURL) {
+    var favFac = {};
+    var favorites = [];
+
+    favFac.addToFavorites = function (index) {
+
+      if(favorites.some(function(fav){return fav.id == index;})) {
+        console.log("Id " + index + " is alread a favorite");
+        return;
+      }
+
+      console.log("Added " + index + " to dish favorites.");
+      favorites.push({id: index});
+    };
+
+    favFac.deleteFromFavorites = function (index) {
+      for (var i = 0; i < favorites.length; i++) {
+        if (favorites[i].id == index) {
+          favorites.splice(i, 1);
+        }
+      }
+    }
+
+    favFac.getFavorites = function () {
+      return favorites;
+    };
+
+    return favFac;
+  }])
+
 ;
