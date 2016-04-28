@@ -184,21 +184,60 @@ angular.module('conFusion.controllers', [])
   //================================================================
   // DishDetailController
   //================================================================
-  .controller('DishDetailController', ['$scope', '$stateParams', 'menuFactory', 'baseURL', function($scope, $stateParams, menuFactory, baseURL) {
+  .controller('DishDetailController', ['$scope', '$stateParams', 'menuFactory', 'baseURL', '$ionicPopover', '$ionicLoading', '$timeout',
+    function($scope, $stateParams, menuFactory, baseURL, $ionicPopover, $ionicLoading, $timeout) {
 
-    $scope.baseURL = baseURL;
-    $scope.showDish = false;
-    $scope.message="Loading ...";
-    menuFactory.getDishes().get({id:parseInt($stateParams.id,10)})
-      .$promise.then(
-      function(response){
-        $scope.dish = response;
-        $scope.showDish = true;
-      },
-      function(response) {
-        $scope.message = formatError(response);
+      $scope.baseURL = baseURL;
+      $scope.showDish = false;
+      $scope.message="Loading ...";
+
+      menuFactory.getDishes().get({id:parseInt($stateParams.id,10)})
+        .$promise.then(
+        function(response){
+          $scope.dish = response;
+          $scope.showDish = true;
+        },
+        function(response) {
+          $scope.message = formatError(response);
+        }
+      );
+
+      // .fromTemplateUrl() method
+      $ionicPopover.fromTemplateUrl('templates/dish-detail-popover.html', {
+        scope: $scope
+      }).then(function(popover) {
+        $scope.popover = popover;
+      });
+
+      $scope.openPopover = function($event) {
+        $scope.popover.show($event);
+        console.log("Opened popover", $event);
+      };
+      $scope.closePopover = function() {
+        $scope.popover.hide();
+      };
+      //Cleanup the popover when we're done with it!
+      $scope.$on('$destroy', function() {
+        $scope.popover.remove();
+      });
+      // Execute action on hide popover
+      $scope.$on('popover.hidden', function() {
+        // Execute action
+      });
+      // Execute action on remove popover
+      $scope.$on('popover.removed', function() {
+        // Execute action
+      });
+
+      $scope.addToVavorites = function() {
+        console.log("Adding to favorites");
+        $scope.popover.hide();
+      };
+
+      $scope.addComment = function() {
+        console.log("Adding comment");
+        $scope.popover.hide();
       }
-    );
 
   }])
 
@@ -303,33 +342,65 @@ angular.module('conFusion.controllers', [])
   //================================================================
   // FavoritesController
   //================================================================
-  .controller('FavoritesController', ['$scope', 'menuFactory', 'favoriteFactory', 'baseURL', '$ionicListDelegate', function ($scope, menuFactory, favoriteFactory, baseURL, $ionicListDelegate) {
+  .controller('FavoritesController', [
+    '$scope', 'menuFactory', 'favoriteFactory', 'baseURL', '$ionicListDelegate', '$ionicPopup', '$ionicLoading', '$timeout',
+    function ($scope, menuFactory, favoriteFactory, baseURL, $ionicListDelegate, $ionicPopup, $ionicLoading, $timeout) {
 
-    $scope.baseURL = baseURL;
-    $scope.shouldShowDelete = false;
-
-    $scope.favorites = favoriteFactory.getFavorites();
-
-    $scope.dishes = menuFactory.getDishes().query(
-      function (response) {
-        $scope.dishes = response;
-      },
-      function (response) {
-        $scope.message = "Error: " + response.status + " " + response.statusText;
-      });
-    console.log($scope.dishes, $scope.favorites);
-
-    $scope.toggleDelete = function () {
-      $scope.shouldShowDelete = !$scope.shouldShowDelete;
-      console.log($scope.shouldShowDelete);
-    }
-
-    $scope.deleteFavorite = function (index) {
-
-      favoriteFactory.deleteFromFavorites(index);
+      $scope.baseURL = baseURL;
       $scope.shouldShowDelete = false;
 
-    }}])
+      $ionicLoading.show({
+        template: '<ion-spinner></ion-spinner> Loading...'
+      });
+
+      $scope.favorites = favoriteFactory.getFavorites();
+
+      $scope.dishes = menuFactory.getDishes().query(
+        function (response) {
+          $scope.dishes = response;
+          $timeout(function () {
+            $ionicLoading.hide();
+          }, 1000);
+        },
+        function (response) {
+          $scope.message = "Error: " + response.status + " " + response.statusText;
+          $timeout(function () {
+            $ionicLoading.hide();
+          }, 1000);
+        });
+      console.log($scope.dishes, $scope.favorites);
+
+      $scope.toggleDelete = function () {
+        $scope.shouldShowDelete = !$scope.shouldShowDelete;
+        console.log($scope.shouldShowDelete);
+      };
+
+      $scope.deleteFavorite = function (index) {
+
+        favoriteFactory.deleteFromFavorites(index);
+        $scope.shouldShowDelete = false;
+
+      };
+
+      $scope.deleteFavorite = function (index) {
+
+        $ionicPopup.confirm({
+          title: 'Confirm Delete',
+          template: 'Are you sure you want to delete this item?'
+        }).then(function (res) {
+          if (res) {
+            console.log('Ok to delete');
+            favoriteFactory.deleteFromFavorites(index);
+          } else {
+            console.log('Canceled delete');
+          }
+        });
+
+        $scope.shouldShowDelete = false;
+
+      }
+
+    }])
 
 
   //================================================================
