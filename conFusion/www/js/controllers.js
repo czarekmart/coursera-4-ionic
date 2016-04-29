@@ -184,8 +184,8 @@ angular.module('conFusion.controllers', [])
   //================================================================
   // DishDetailController
   //================================================================
-  .controller('DishDetailController', ['$scope', '$stateParams', 'menuFactory', 'baseURL', '$ionicPopover', '$ionicLoading', '$timeout',
-    function($scope, $stateParams, menuFactory, baseURL, $ionicPopover, $ionicLoading, $timeout) {
+  .controller('DishDetailController', ['$scope', '$stateParams', 'menuFactory', 'favoriteFactory', 'baseURL', '$ionicPopover', '$ionicLoading', '$ionicModal', '$timeout',
+    function($scope, $stateParams, menuFactory, favoriteFactory, baseURL, $ionicPopover, $ionicLoading, $ionicModal, $timeout) {
 
       $scope.baseURL = baseURL;
       $scope.showDish = false;
@@ -202,7 +202,9 @@ angular.module('conFusion.controllers', [])
         }
       );
 
-      // .fromTemplateUrl() method
+      //--------------------------------------------------------
+      // Dish popover
+      //--------------------------------------------------------
       $ionicPopover.fromTemplateUrl('templates/dish-detail-popover.html', {
         scope: $scope
       }).then(function(popover) {
@@ -211,7 +213,6 @@ angular.module('conFusion.controllers', [])
 
       $scope.openPopover = function($event) {
         $scope.popover.show($event);
-        console.log("Opened popover", $event);
       };
       $scope.closePopover = function() {
         $scope.popover.hide();
@@ -229,48 +230,50 @@ angular.module('conFusion.controllers', [])
         // Execute action
       });
 
-      $scope.addToVavorites = function() {
-        console.log("Adding to favorites");
-        $scope.popover.hide();
-      };
-
-      $scope.addComment = function() {
-        console.log("Adding comment");
+      $scope.addFavorite = function () {
+        console.log("Adding dish + " + $scope.dish.id + " to favorites.");
+        favoriteFactory.addToFavorites($scope.dish.id);
         $scope.popover.hide();
       }
 
-  }])
+      //------------------------------------------------------------------
+      // Dish comment form
+      //------------------------------------------------------------------
 
-  //================================================================
-  // DishCommentController
-  //================================================================
-  .controller('DishCommentController', ['$scope', 'menuFactory', function($scope, menuFactory) {
+      var resetComment = function() {
+        return { rating: 5, author:"", comment:"" };
+      }
 
-    var resetComment = function() {
+      $scope.comment = resetComment();
 
-      $scope.comment = {
-        author: "",
-        rating: 5,
-        comment: "",
-        date: "",
+      $ionicModal.fromTemplateUrl('templates/dish-comment.html', {
+        scope: $scope
+      }).then(function(modal) {
+        $scope.dishCommentForm = modal;
+      });
+
+      // Triggered in the dishComment modal to close it
+      $scope.closeDishComment = function() {
+        $scope.dishCommentForm.hide();
       };
-    };
 
-    resetComment();
+      // Open the dishComment modal
+      $scope.addCommentForm = function() {
+        $scope.popover.hide();
+        $scope.dishCommentForm.show();
+      };
 
-    $scope.submitComment = function () {
+      // Perform the action when the user submits the dishComment form
+      $scope.submitDishComment = function() {
 
-      $scope.comment.date = new Date().toISOString();
+        $scope.comment.date = new Date().toISOString();
+        $scope.dish.comments.push($scope.comment);
+        menuFactory.getDishes().update({id:$scope.dish.id}, $scope.dish);
 
-      $scope.dish.comments.push($scope.comment);
-      menuFactory.getDishes().update({id:$scope.dish.id}, $scope.dish);
+        $scope.closeDishComment();
+        $scope.comment = resetComment();
+      };
 
-      //Step 4: reset your form to pristine
-      $scope.commentForm.$setPristine();
-
-      //Step 5: reset your JavaScript object that holds your comment
-      resetComment();
-    }
   }])
 
   //================================================================

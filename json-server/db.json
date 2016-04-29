@@ -88,7 +88,7 @@
       "image": "images/vadonut.png",
       "category": "appetizer",
       "label": "New",
-      "price": "1.99",
+      "price": 1.99,
       "description": "A quintessential ConFusion experience, is it a vada or is it a donut?",
       "comments": [
         {
@@ -120,6 +120,18 @@
           "comment": "It's your birthday, we're gonna party!",
           "author": "25 Cent",
           "date": "2011-12-02T17:57:28.556094Z"
+        },
+        {
+          "rating": "4",
+          "author": "Cezar",
+          "comment": "Good, but polish donuts are better.",
+          "date": "2016-04-29T02:38:45.067Z"
+        },
+        {
+          "rating": "1",
+          "author": "Sergei",
+          "comment": "Terrible! Terrible!",
+          "date": "2016-04-29T02:41:30.834Z"
         }
       ]
     },
