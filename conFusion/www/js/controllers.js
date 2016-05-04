@@ -3,7 +3,7 @@ angular.module('conFusion.controllers', [])
   //================================================================
   // AppCtrl
   //================================================================
-  .controller('AppCtrl', function($scope, $ionicModal, $timeout) {
+  .controller('AppCtrl', function($scope, $ionicModal, $timeout, $localStorage) {
 
     // With the new view caching in Ionic, Controllers are only called
     // when they are recreated or on app start, instead of every page change.
@@ -16,34 +16,62 @@ angular.module('conFusion.controllers', [])
     // LOGIN FORM
     //-------------------------------------------------
     // Form data for the login modal
-    $scope.loginData = {};
+    $scope.loginData = $localStorage.getObject('userinfo','{}');
 
     // Create the login modal that we will use later
     $ionicModal.fromTemplateUrl('templates/login.html', {
       scope: $scope
     }).then(function(modal) {
-      $scope.modal = modal;
+      $scope.loginModal = modal;
     });
+
+    $ionicModal.fromTemplateUrl('templates/error-modal.html', {
+      scope: $scope
+    }).then(function(modal) {
+      $scope.errorModal = modal;
+    });
+
+    var showLoginError = function(errorMessage) {
+      $scope.errorMessage = errorMessage;
+      $scope.errorModal.show();
+    }
 
     // Triggered in the login modal to close it
     $scope.closeLogin = function() {
-      $scope.modal.hide();
+      $scope.loginModal.hide();
     };
 
     // Open the login modal
     $scope.login = function() {
-      $scope.modal.show();
+      $scope.loginModal.show();
     };
 
     // Perform the login action when the user submits the login form
     $scope.doLogin = function() {
-      console.log('Doing login', $scope.loginData);
 
-      // Simulate a login delay. Remove this and replace with your login
-      // code if using a login system
-      $timeout(function() {
+      var loginData = $localStorage.getObject('userinfo');
+
+      if ( !loginData || !loginData.username || !loginData.password ) {
+
+        // First time login. Write to local storage
+        $localStorage.storeObject('userinfo', $scope.loginData);
+
+        // Simulate a login delay. Remove this and replace with your login
+        // code if using a login system
+        $timeout(function () {
+          $scope.closeLogin();
+        }, 1000);
+      }
+      else if ($scope.loginData.username != loginData.username ) {
+
+        showLoginError('Invalid Username');
+      }
+      else if ( $scope.loginData.password != loginData.password) {
+        showLoginError('Invalid Password');
+      }
+      else {
         $scope.closeLogin();
-      }, 1000);
+      }
     };
 
 
@@ -96,7 +124,7 @@ angular.module('conFusion.controllers', [])
 
     $scope.showMenu = false;
     $scope.message = "Loading ...";
-    menuFactory.getDishes().query(
+    menuFactory.query(
       function(response) {
         $scope.dishes = response;
         $scope.showMenu = true;
@@ -184,23 +212,11 @@ angular.module('conFusion.controllers', [])
   //================================================================
   // DishDetailController
   //================================================================
-  .controller('DishDetailController', ['$scope', '$stateParams', 'menuFactory', 'favoriteFactory', 'baseURL', '$ionicPopover', '$ionicLoading', '$ionicModal', '$timeout',
-    function($scope, $stateParams, menuFactory, favoriteFactory, baseURL, $ionicPopover, $ionicLoading, $ionicModal, $timeout) {
+  .controller('DishDetailController', ['$scope', '$stateParams', 'dish', 'menuFactory', 'favoriteFactory', 'baseURL', '$ionicPopover', '$ionicModal',
+    function($scope, $stateParams, dish, menuFactory, favoriteFactory, baseURL, $ionicPopover, $ionicModal) {
 
       $scope.baseURL = baseURL;
-      $scope.showDish = false;
-      $scope.message="Loading ...";
-
-      menuFactory.getDishes().get({id:parseInt($stateParams.id,10)})
-        .$promise.then(
-        function(response){
-          $scope.dish = response;
-          $scope.showDish = true;
-        },
-        function(response) {
-          $scope.message = formatError(response);
-        }
-      );
+      $scope.dish = dish;
 
       //--------------------------------------------------------
       // Dish popover
@@ -268,7 +284,7 @@ angular.module('conFusion.controllers', [])
 
         $scope.comment.date = new Date().toISOString();
         $scope.dish.comments.push($scope.comment);
-        menuFactory.getDishes().update({id:$scope.dish.id}, $scope.dish);
+        menuFactory.update({id:$scope.dish.id}, $scope.dish);
 
         $scope.closeDishComment();
         $scope.comment = resetComment();
@@ -279,13 +295,13 @@ angular.module('conFusion.controllers', [])
   //================================================================
   // IndexController
   //================================================================
-  .controller('IndexController', ['$scope', 'menuFactory', 'corporateFactory', 'baseURL', function($scope, menuFactory, corporateFactory, baseURL) {
+  .controller('IndexController', ['$scope', 'menuFactory', 'promotionFactory', 'corporateFactory', 'baseURL', function($scope, menuFactory, promotionFactory, corporateFactory, baseURL) {
 
     $scope.baseURL = baseURL;
 
     $scope.showDish = false;
     $scope.message="Loading ...";
-    menuFactory.getDishes().get({id:0})
+    menuFactory.get({id:0})
       .$promise.then(
       function(response){
         $scope.dish = response;
@@ -296,31 +312,10 @@ angular.module('conFusion.controllers', [])
       }
     );
 
-    $scope.showPromotion = false;
-    $scope.promotionMessage="Loading ...";
-    menuFactory.getPromotions().get({id:0})
-      .$promise.then(
-      function(response){
-        $scope.promotion = response;
-        $scope.showPromotion = true;
-      },
-      function(response) {
-        $scope.promotionMessage = formatError(response, 'Cannot read promotion information from the server.');
-      }
-    );
+    $scope.promotion = promotionFactory.get({id:0});
 
-    $scope.showLeader = false;
-    $scope.leaderMessage="Loading ...";
-    corporateFactory.getLeaders().get({id:3})
-      .$promise.then(
-      function(response){
-        $scope.leader = response;
-        $scope.showLeader = true;
-      },
-      function(response) {
-        $scope.leaderMessage = formatError(response, 'Cannot read leadership information from the server.');
-      }
-    );
+    $scope.leader = corporateFactory.getLeaders().get({id:3});
+
   }])
 
   //================================================================
@@ -346,32 +341,15 @@ angular.module('conFusion.controllers', [])
   // FavoritesController
   //================================================================
   .controller('FavoritesController', [
-    '$scope', 'menuFactory', 'favoriteFactory', 'baseURL', '$ionicListDelegate', '$ionicPopup', '$ionicLoading', '$timeout',
-    function ($scope, menuFactory, favoriteFactory, baseURL, $ionicListDelegate, $ionicPopup, $ionicLoading, $timeout) {
+    '$scope', 'dishes', 'favorites', 'favoriteFactory', 'baseURL', '$ionicListDelegate', '$ionicPopup', '$ionicLoading', '$timeout',
+    function ($scope, dishes, favorites, favoriteFactory, baseURL, $ionicListDelegate, $ionicPopup, $ionicLoading, $timeout) {
 
       $scope.baseURL = baseURL;
       $scope.shouldShowDelete = false;
 
-      $ionicLoading.show({
-        template: '<ion-spinner></ion-spinner> Loading...'
-      });
+      $scope.favorites = favorites;
 
-      $scope.favorites = favoriteFactory.getFavorites();
-
-      $scope.dishes = menuFactory.getDishes().query(
-        function (response) {
-          $scope.dishes = response;
-          $timeout(function () {
-            $ionicLoading.hide();
-          }, 1000);
-        },
-        function (response) {
-          $scope.message = "Error: " + response.status + " " + response.statusText;
-          $timeout(function () {
-            $ionicLoading.hide();
-          }, 1000);
-        });
-      console.log($scope.dishes, $scope.favorites);
+      $scope.dishes = dishes;
 
       $scope.toggleDelete = function () {
         $scope.shouldShowDelete = !$scope.shouldShowDelete;
