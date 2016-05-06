@@ -3,7 +3,7 @@ angular.module('conFusion.controllers', [])
   //================================================================
   // AppCtrl
   //================================================================
-  .controller('AppCtrl', function($scope, $ionicModal, $timeout, $localStorage) {
+  .controller('AppCtrl', function($scope, $ionicModal, $ionicPopup, $timeout, $localStorage) {
 
     // With the new view caching in Ionic, Controllers are only called
     // when they are recreated or on app start, instead of every page change.
@@ -25,15 +25,20 @@ angular.module('conFusion.controllers', [])
       $scope.loginModal = modal;
     });
 
-    $ionicModal.fromTemplateUrl('templates/error-modal.html', {
-      scope: $scope
-    }).then(function(modal) {
-      $scope.errorModal = modal;
-    });
+    //$ionicModal.fromTemplateUrl('templates/error-modal.html', {
+    //  scope: $scope
+    //}).then(function(modal) {
+    //  $scope.errorModal = modal;
+    //});
 
     var showLoginError = function(errorMessage) {
-      $scope.errorMessage = errorMessage;
-      $scope.errorModal.show();
+      $ionicPopup.alert({
+        subTitle: errorMessage,
+        okText: 'Retry',
+        okType: 'button-assertive'
+      });
+      //$scope.errorMessage = errorMessage;
+      //$scope.errorModal.show();
     }
 
     // Triggered in the login modal to close it
@@ -113,55 +118,47 @@ angular.module('conFusion.controllers', [])
   //================================================================
   // MenuController
   //================================================================
-  .controller('MenuController', ['$scope', 'menuFactory', 'favoriteFactory', 'baseURL', '$ionicListDelegate', function($scope, menuFactory, favoriteFactory, baseURL, $ionicListDelegate) {
+  .controller('MenuController',
+  ['$scope', 'dishes', 'favoriteFactory', 'baseURL', '$ionicListDelegate',
+    function($scope, dishes, favoriteFactory, baseURL, $ionicListDelegate) {
 
       $scope.baseURL = baseURL;
-    //====================================================================
-    // menu.html controllers
-    //====================================================================
+      //====================================================================
+      // menu.html controllers
+      //====================================================================
 
-    $scope.showDetails = false;
+      $scope.showDetails = false;
+      $scope.dishes = dishes;
 
-    $scope.showMenu = false;
-    $scope.message = "Loading ...";
-    menuFactory.query(
-      function(response) {
-        $scope.dishes = response;
-        $scope.showMenu = true;
-      },
-      function(response) {
-        $scope.message = formatError(response);
-      });
+      $scope.menus = [
+        { filtText: "", name: "The Menu" },
+        { filtText: "appetizer", name: "Appetizers" },
+        { filtText: "mains", name: "Mains" },
+        { filtText: "dessert", name: "Deserts" },
+      ];
 
-    $scope.menus = [
-      { filtText: "", name: "The Menu" },
-      { filtText: "appetizer", name: "Appetizers" },
-      { filtText: "mains", name: "Mains" },
-      { filtText: "dessert", name: "Deserts" },
-    ];
+      $scope.select = function(menu) {
+        $scope.selectedMenu = menu;
+        $scope.filtText = menu.filtText;
+      };
 
-    $scope.select = function(menu) {
-      $scope.selectedMenu = menu;
-      $scope.filtText = menu.filtText;
-    };
+      $scope.isSelected = function (menu) {
+        return ($scope.selectedMenu === menu);
+      };
 
-    $scope.isSelected = function (menu) {
-      return ($scope.selectedMenu === menu);
-    };
+      $scope.select($scope.menus[0]);
 
-    $scope.select($scope.menus[0]);
+      $scope.toggleDetails = function() {
+        $scope.showDetails = !$scope.showDetails;
+      };
 
-    $scope.toggleDetails = function() {
-      $scope.showDetails = !$scope.showDetails;
-    };
+      $scope.addFavorite = function (index) {
+        favoriteFactory.addToFavorites(index);
+        // we need it to close the button
+        $ionicListDelegate.closeOptionButtons();
+      }
 
-    $scope.addFavorite = function (index) {
-      favoriteFactory.addToFavorites(index);
-      // we need it to close the button
-      $ionicListDelegate.closeOptionButtons();
-    }
-
-  }])
+    }])
 
   //================================================================
   // ContactController
@@ -295,45 +292,25 @@ angular.module('conFusion.controllers', [])
   //================================================================
   // IndexController
   //================================================================
-  .controller('IndexController', ['$scope', 'menuFactory', 'promotionFactory', 'corporateFactory', 'baseURL', function($scope, menuFactory, promotionFactory, corporateFactory, baseURL) {
+  .controller('IndexController', ['$scope', 'dish', 'promotion', 'leader', 'baseURL', function($scope, dish, promotion, leader, baseURL) {
 
     $scope.baseURL = baseURL;
 
-    $scope.showDish = false;
-    $scope.message="Loading ...";
-    menuFactory.get({id:0})
-      .$promise.then(
-      function(response){
-        $scope.dish = response;
-        $scope.showDish = true;
-      },
-      function(response) {
-        $scope.message = formatError(response);
-      }
-    );
+    $scope.dish = dish;
 
-    $scope.promotion = promotionFactory.get({id:0});
+    $scope.promotion = promotion;
 
-    $scope.leader = corporateFactory.getLeaders().get({id:3});
+    $scope.leader = leader;
 
   }])
 
   //================================================================
   // AboutController
   //================================================================
-  .controller('AboutController', ['$scope', 'corporateFactory', 'baseURL', function($scope, corporateFactory, baseURL) {
+  .controller('AboutController', ['$scope', 'leaders', 'baseURL', function($scope, leaders, baseURL) {
 
     $scope.baseURL = baseURL;
-    $scope.showLeaders = false;
-    $scope.message="Loading ...";
-    corporateFactory.getLeaders().query(
-      function(response) {
-        $scope.leaders = response;
-        $scope.showLeaders = true;
-      },
-      function(response) {
-        $scope.message = formatError(response, 'Cannot read leadership information from the server.');
-      });
+    $scope.leaders = leaders;
 
   }])
 
@@ -354,13 +331,6 @@ angular.module('conFusion.controllers', [])
       $scope.toggleDelete = function () {
         $scope.shouldShowDelete = !$scope.shouldShowDelete;
         console.log($scope.shouldShowDelete);
-      };
-
-      $scope.deleteFavorite = function (index) {
-
-        favoriteFactory.deleteFromFavorites(index);
-        $scope.shouldShowDelete = false;
-
       };
 
       $scope.deleteFavorite = function (index) {

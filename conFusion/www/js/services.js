@@ -1,7 +1,8 @@
 'use strict';
 
 angular.module('conFusion.services', ['ngResource'])
-  .constant("baseURL","http://localhost:3000/")
+ // .constant("baseURL","http://localhost:3000/")
+  .constant("baseURL","http://10.0.1.8:3000/")
 
   //***********************************************************************************
   // menuFactory
@@ -50,9 +51,10 @@ angular.module('conFusion.services', ['ngResource'])
   //***********************************************************************************
   // favoriteFactory
   //***********************************************************************************
-  .factory('favoriteFactory', ['$resource', 'baseURL', function ($resource, baseURL) {
+  .factory('favoriteFactory', ['$localStorage', function ($localStorage) {
+
     var favFac = {};
-    var favorites = [];
+    var favorites = $localStorage.getObject("favorites", []);
 
     favFac.addToFavorites = function (index) {
 
@@ -61,8 +63,8 @@ angular.module('conFusion.services', ['ngResource'])
         return;
       }
 
-      console.log("Added " + index + " to dish favorites.");
       favorites.push({id: index});
+      $localStorage.storeObject("favorites", favorites);
     };
 
     favFac.deleteFromFavorites = function (index) {
@@ -71,6 +73,7 @@ angular.module('conFusion.services', ['ngResource'])
           favorites.splice(i, 1);
         }
       }
+      $localStorage.storeObject("favorites", favorites);
     }
 
     favFac.getFavorites = function () {
@@ -80,6 +83,9 @@ angular.module('conFusion.services', ['ngResource'])
     return favFac;
   }])
 
+  //***********************************************************************************
+  // $localStorage
+  //***********************************************************************************
   .factory('$localStorage', ['$window', function($window) {
     return {
       store: function(key, value) {
@@ -92,7 +98,13 @@ angular.module('conFusion.services', ['ngResource'])
         $window.localStorage[key] = JSON.stringify(value);
       },
       getObject: function(key,defaultValue) {
-        return JSON.parse($window.localStorage[key] || defaultValue);
+        var value = $window.localStorage[key];
+        if ( value ) {
+          return JSON.parse(value);
+        }
+        else {
+          return defaultValue;
+        }
       }
     }
   }])
