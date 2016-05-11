@@ -16,7 +16,7 @@ angular.module('conFusion.controllers', [])
     // LOGIN FORM
     //-------------------------------------------------
     // Form data for the login modal
-    $scope.loginData = $localStorage.getObject('userinfo','{}');
+    $scope.loginData = $localStorage.getObject('userinfo',{});
 
     // Create the login modal that we will use later
     $ionicModal.fromTemplateUrl('templates/login.html', {
@@ -119,8 +119,8 @@ angular.module('conFusion.controllers', [])
   // MenuController
   //================================================================
   .controller('MenuController',
-  ['$scope', 'dishes', 'favoriteFactory', 'baseURL', '$ionicListDelegate',
-    function($scope, dishes, favoriteFactory, baseURL, $ionicListDelegate) {
+  ['$scope', 'dishes', 'favoriteFactory', 'baseURL', '$ionicListDelegate', '$ionicPlatform', '$cordovaLocalNotification', '$cordovaToast',
+    function($scope, dishes, favoriteFactory, baseURL, $ionicListDelegate, $ionicPlatform, $cordovaLocalNotification, $cordovaToast) {
 
       $scope.baseURL = baseURL;
       //====================================================================
@@ -156,6 +156,29 @@ angular.module('conFusion.controllers', [])
         favoriteFactory.addToFavorites(index);
         // we need it to close the button
         $ionicListDelegate.closeOptionButtons();
+
+        // Notify the user
+        $ionicPlatform.ready(function () {
+          $cordovaLocalNotification.schedule({
+            id: 1,
+            title: "Added Favorite",
+            text: $scope.dishes[index].name
+          }).then(function () {
+              console.log('Added Favorite '+$scope.dishes[index].name);
+            },
+            function () {
+              console.log('Failed to add Notification ');
+            });
+
+          $cordovaToast
+            .show('Added Favorite '+$scope.dishes[index].name, 'long', 'center')
+            .then(function (success) {
+              // success
+            }, function (error) {
+              // error
+            });
+        });
+
       }
 
     }])
