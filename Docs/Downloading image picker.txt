@@ -1,0 +1,5 @@
+ionic plugin add cordova-plugin-image-picker
+
+
+Then do dependency injection in the controller for $cordovaImagePicker
+
