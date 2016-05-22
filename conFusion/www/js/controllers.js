@@ -160,6 +160,7 @@ angular.module('conFusion.controllers', [])
       $scope.takePicture = function() {
         $cordovaCamera.getPicture(options).then(function(imageData) {
           $scope.registration.imgSrc = "data:image/jpeg;base64," + imageData;
+          console.log("Image data: ", imageData);
         }, function(err) {
           console.log("$scope.takePicture error:", err);
         });
@@ -180,6 +181,7 @@ angular.module('conFusion.controllers', [])
           .then(function (results) {
             if ( results.length > 0 ) {
               $scope.registration.imgSrc = results[0];
+              console.log("Received URI from imagePicker", results[0]);
             }
           }, function(err) {
             console.log("$scope.pickImage error:", err);
@@ -455,6 +457,8 @@ angular.module('conFusion.controllers', [])
       };
 
       $scope.deleteFavorite = function (index) {
+
+        console.log("Deleting favorite " + index);
 
         $ionicPopup.confirm({
           title: 'Confirm Delete',
